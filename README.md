@@ -1,0 +1,1 @@
+The objective of this mini project  is to create a simple Express.js, API that connect to a PostgreSQL database and be able to perform basic database operations that involve (CRDUD- Create, React, Read, Update and Delete
