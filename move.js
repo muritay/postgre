@@ -5,7 +5,7 @@ const port = 3000;
 
 app.use (express.json());
 
-const con = new Pool({
+const pool = new Pool({
 user: "postgres",
 host: "localhost",
 port: "5432",
@@ -18,82 +18,83 @@ app.listen(port, () =>{
     console.log('server listening at htttp://localhost:{port}');
 });
 
-app.post('/postData',(req,res) =>{
+app.post('/postData', async (req,res) =>{
+     try {
     const {name, id} = req.body;
 
-    const insert_query = 'INSERT INTO jidetable (name, id) VALUES ($1, $2)'
+      const result = await pool.query('INSERT INTO jidetable (name, id) VALUES ($1, $2)')
 
-    con.query(insert_query,[name, id], (err, result) =>{
+       res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+  });
 
-        if (err)
-        {
-            res.send(err)
-        } else{
-            console.log(result)
-            res.send("POSTED DATA")
-        }
-    })
-    })
+ 
 
-    
-    app.get('/fetchData',(req, res)=>{
-        const fetch_query = "Select * from jidetable"
-        con.query(fetch_query,(err, result)=>{
-            if(err)
-            {
-                res.send(err)
-            }else{
-                res.send(result,rows)
-            }
-            })
-        })
+     app.get('/fetchData', async(req, res)=>{
+         try {
+        const result = await pool.query ("Select * from jidetable")
+          res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+      }
+    });
+  
 
         
-        app.get('/fetchbyId/:id',(req, res) =>{
-        const id= req.params.id
-        const fetch_query = "Select * from jidetable where id = $1"
-        con.query(fetch_query, [id], (err, result) =>{
-        if(err)
-        {
-        res.send(err)
-        }else{
-        res.send(result, rows)
-        }
-        })
-
-        })
+        app.get('/fetchbyId/:id', async(req, res) =>{
+             try {
+        const {id}= req.params;
+         const result = await pool.query ("Select * from jidetable where id = $1")
+        
+          if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'id not found' });
+      }
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+    })
+  ;
 
         
-        app.put('/update/:id', (req, res) =>{
-        const id = req.params.id;
+        app.put('/update/:id', async (req, res) =>{
+              try {
+        const { id } = req.params;
         const name = req.body.name;
         const address = req.body.address;
-        const update_query ="UPDATE jidetable SET name = $1, address =$2 WHERE id=$3"
+         const result = await pool.query("UPDATE jidetable SET name = $1, address =$2 WHERE id=$3")
 
-        con.query(update_query, [name, address, id], (err, result) =>{
-        if(err)
-        {
-        res.send(err)
-        }else{
-        res.send("UPDATED")
-        }
-        })
-    })
+            if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'id not found' });
+      }
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
 
-    app.delete('/delete/:id', (req, res) =>{
-        const id= req.params.id
-        const delete_query ='Delete from jidetable where id =$1'
-        con.query(delete_query,[id],(err, result) =>{
-        if(err)
-        {
-        res.send(err)
-        }else{
-        res.send("Deleted")
-        }
-        })
-    })
+    app.delete('/delete/:id', async (req, res) =>{
+         try {
+        const {id}= req.params
+          const result = await pool.query ('Delete from jidetable where id =$1')
+         if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'id not found' });
+      }
+      res.json({ message: 'Item deleted' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
 
 
 con.connect(). then (()  => console.log('connected to PostgreSQL'))
 .catch(err => console.error ('Error connecting to PostgreSQL', err));
+
 
